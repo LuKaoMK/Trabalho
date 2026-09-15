@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMTP — O Correio da Internet</title>
+<style>
+  :root{
+    --ink:#182635;
+    --ink-2:#233448;
+    --paper:#EFEAE0;
+    --paper-2:#E2DBCB;
+    --stamp:#AE3B2E;
+    --teal:#3E7C72;
+    --line: rgba(239,234,224,0.18);
+    --line-dark: rgba(24,38,53,0.15);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family: 'Iowan Old Style','Palatino Linotype', Georgia, 'Times New Roman', serif;
+    line-height:1.6;
+  }
+  code, .mono{
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+
+  a{color:var(--stamp);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    background:var(--ink);
+    color:var(--paper);
+    padding: 5.5rem 1.5rem 4.5rem;
+    position:relative;
+    overflow:hidden;
+    border-bottom: 6px solid var(--stamp);
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      radial-gradient(circle at 85% 15%, rgba(174,59,46,0.28), transparent 45%),
+      radial-gradient(circle at 10% 90%, rgba(62,124,114,0.22), transparent 40%);
+    pointer-events:none;
+  }
+  .hero-inner{
+    max-width: 880px;
+    margin:0 auto;
+    position:relative;
+  }
+  .postmark{
+    display:inline-flex;
+    align-items:center;
+    gap:.5rem;
+    border:1.5px solid var(--stamp);
+    color:var(--stamp);
+    background:rgba(174,59,46,0.08);
+    padding:.35rem .8rem;
+    border-radius:999px;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size:.78rem;
+    letter-spacing:.02em;
+    margin-bottom:1.8rem;
+  }
+  .postmark svg{width:14px;height:14px;}
+  h1{
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    line-height:1.1;
+    margin:0 0 1rem;
+    font-weight:500;
+  }
+  .hero p.lede{
+    max-width: 58ch;
+    font-size:1.15rem;
+    color: rgba(239,234,224,0.82);
+    margin:0 0 2.2rem;
+  }
+  .envelope-line{
+    display:flex; align-items:center; gap: 1rem;
+    font-family:'SFMono-Regular', Consolas, monospace;
+    font-size:.85rem;
+    color: rgba(239,234,224,0.65);
+    flex-wrap:wrap;
+  }
+  .envelope-line span.step{
+    border:1px solid var(--line);
+    padding:.3rem .65rem;
+    border-radius:5px;
+  }
+  .envelope-line .arrow{color:var(--teal);}
+
+  /* ---------- SECTIONS ---------- */
+  section{
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 3.8rem 1.5rem;
+    border-bottom: 1px solid var(--line-dark);
+  }
+  section:last-of-type{border-bottom:none;}
+
+  .eyebrow{
+    font-family:'SFMono-Regular', Consolas, monospace;
+    font-size:.75rem;
+    color:var(--teal);
+    margin:0 0 .6rem;
+  }
+  h2{
+    font-size:1.9rem;
+    font-weight:500;
+    margin: 0 0 1.2rem;
+    color:var(--ink);
+  }
+  h3{
+    font-size:1.2rem;
+    font-weight:600;
+    margin: 0 0 .6rem;
+  }
+  p{ max-width: 68ch; }
+  .lead{font-size:1.08rem;}
+
+  /* two-col definition */
+  .define{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:2rem;
+    margin-top:1.6rem;
+  }
+  @media (max-width: 680px){ .define{grid-template-columns:1fr;} }
+  .define .card{
+    background:var(--paper-2);
+    border:1px solid var(--line-dark);
+    border-radius:4px;
+    padding:1.3rem 1.4rem;
+  }
+  .define .card h3{color:var(--stamp);}
+
+  /* ---------- Sequence diagram ---------- */
+  .stage{
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:6px;
+    padding: 2rem 1.6rem;
+    margin-top:1.8rem;
+    overflow-x:auto;
+  }
+  .actors{
+    display:flex;
+    justify-content:space-between;
+    font-family:'SFMono-Regular', Consolas, monospace;
+    font-size:.8rem;
+    color:var(--teal);
+    margin-bottom:1.4rem;
+    min-width:520px;
+  }
+  .wire{
+    position:relative;
+    min-width:520px;
+  }
+  .wire::before{
+    content:"";
+    position:absolute;
+    top:0; bottom:0; left:8%;
+    width:1px;
+    background: var(--line);
+  }
+  .wire::after{
+    content:"";
+    position:absolute;
+    top:0; bottom:0; right:8%;
+    width:1px;
+    background: var(--line);
+  }
+  .msg{
+    position:relative;
+    display:flex;
+    padding: .55rem 0;
+    font-family:'SFMono-Regular', Consolas, monospace;
+    font-size:.82rem;
+  }
+  .msg .bubble{
+    background:rgba(239,234,224,0.06);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:.4rem .7rem;
+    color: var(--paper);
+  }
+  .msg.right{justify-content:flex-end; padding-right:8%;}
+  .msg.left{justify-content:flex-start; padding-left:8%;}
+  .msg .tag{
+    color:var(--stamp);
+    margin-right:.5rem;
+  }
+  .msg.left .tag{color:var(--teal);}
+
+  /* ---------- Commands table ---------- */
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:1.6rem;
+    font-size:.95rem;
+  }
+  th, td{
+    text-align:left;
+    padding:.75rem .8rem;
+    border-bottom:1px solid var(--line-dark);
+    vertical-align:top;
+  }
+  th{
+    font-family:'SFMono-Regular', Consolas, monospace;
+    font-size:.72rem;
+    color:var(--teal);
+    font-weight:600;
+    border-bottom:2px solid var(--ink);
+  }
+  td.cmd{
+    font-family:'SFMono-Regular', Consolas, monospace;
+    color:var(--stamp);
+    white-space:nowrap;
+    font-weight:600;
+  }
+
+  /* ports */
+  .ports{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:1.2rem;
+    margin-top:1.8rem;
+  }
+  @media (max-width:680px){ .ports{grid-template-columns:1fr;} }
+  .port-card{
+    border:1px solid var(--line-dark);
+    border-radius:6px;
+    padding:1.3rem;
+    position:relative;
+    background:#fff;
+  }
+  .port-card .num{
+    font-family:'SFMono-Regular', Consolas, monospace;
+    font-size:2rem;
+    color:var(--ink);
+    font-weight:700;
+  }
+  .port-card .tag{
+    display:inline-block;
+    margin-top:.4rem;
+    font-family:'SFMono-Regular', Consolas, monospace;
+    font-size:.72rem;
+    padding:.15rem .5rem;
+    border-radius:3px;
+    background:var(--paper-2);
+    color:var(--teal);
+  }
+  .port-card p{font-size:.88rem; margin:.6rem 0 0;}
+
+  /* related protocols */
+  .compare{
+    display:grid;
+    grid-template-columns: repeat(3,1fr);
+    gap:1rem;
+    margin-top:1.6rem;
+  }
+  @media (max-width:680px){ .compare{grid-template-columns:1fr;} }
+  .compare .col{
+    border-top:3px solid var(--ink);
+    padding-top:.9rem;
+  }
+  .compare .col.stamp-top{border-top-color:var(--stamp);}
+  .compare .col.teal-top{border-top-color:var(--teal);}
+  .compare h4{margin:0 0 .4rem; font-size:1rem;}
+  .compare p{font-size:.9rem; margin:0;}
+
+  footer{
+    max-width:880px;
+    margin:0 auto;
+    padding: 2.5rem 1.5rem 3.5rem;
+    font-size:.82rem;
+    color: #6b6455;
+  }
+  footer a{color:var(--stamp);}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="postmark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9 6 9-6M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z"/></svg>
+      RFC 5321 · desde 1982
+    </div>
+    <h1>SMTP: o carteiro que faz o e-mail chegar</h1>
+    <p class="lede">Simple Mail Transfer Protocol é o conjunto de regras que os servidores usam para
+      trocar mensagens de e-mail entre si — a mesma lógica de um correio comum, só que em texto puro,
+      trafegando pela rede em milissegundos.</p>
+    <div class="envelope-line">
+      <span class="step">Cliente</span>
+      <span class="arrow">— HELO / MAIL FROM / RCPT TO / DATA —&gt;</span>
+      <span class="step">Servidor SMTP</span>
+    </div>
+  </div>
+</div>
+
+<section id="oque">
+  <p class="eyebrow">01 · Definição</p>
+  <h2>O que é o SMTP</h2>
+  <p class="lead">O <strong>SMTP (Simple Mail Transfer Protocol)</strong>, ou <em>Protocolo de Transferência
+    de Correio Simples</em>, é um protocolo da camada de aplicação, parte da suíte TCP/IP, responsável
+    exclusivamente pelo <strong>envio</strong> de mensagens de e-mail — do cliente para o servidor, e de
+    servidor para servidor, até a caixa de entrada de destino.</p>
+  <p>Foi definido originalmente em 1982, na <strong>RFC 821</strong>, e atualizado em 2008 pela
+    <strong>RFC 5321</strong>, que é a versão em uso até hoje. Ele opera sobre <strong>TCP</strong>,
+    garantindo que a conexão seja confiável, e usa comandos em texto puro — algo que qualquer pessoa
+    consegue ler e até "conversar" manualmente via terminal.</p>
+
+  <div class="define">
+    <div class="card">
+      <h3>O que o SMTP faz</h3>
+      <p>Envia e retransmite mensagens entre servidores de e-mail, decidindo o caminho até o destino
+        final.</p>
+    </div>
+    <div class="card">
+      <h3>O que o SMTP não faz</h3>
+      <p>Não é usado para o destinatário <em>ler</em> o e-mail. Essa tarefa é do POP3 ou do IMAP.</p>
+    </div>
+  </div>
+</section>
+
+<section id="funcionamento">
+  <p class="eyebrow">02 · Funcionamento</p>
+  <h2>Como a conversa acontece</h2>
+  <p class="lead">Cada envio de e-mail é, na prática, um pequeno diálogo entre duas máquinas. O cliente
+    (por exemplo, o servidor do Gmail) abre uma conexão com o servidor de destino e troca uma sequência
+    fixa de comandos e respostas, cada uma identificada por um código numérico.</p>
+
+  <div class="stage">
+    <div class="actors">
+      <span>CLIENTE SMTP</span>
+      <span>SERVIDOR SMTP</span>
+    </div>
+    <div class="wire">
+      <div class="msg left"><div class="bubble"><span class="tag">→</span>HELO cliente.com</div></div>
+      <div class="msg right"><div class="bubble">250 Olá, prazer em conhecê-lo<span class="tag" style="margin-right:0;margin-left:.5rem;">←</span></div></div>
+      <div class="msg left"><div class="bubble"><span class="tag">→</span>MAIL FROM:&lt;ana@cliente.com&gt;</div></div>
+      <div class="msg right"><div class="bubble">250 OK<span class="tag" style="margin-right:0;margin-left:.5rem;">←</span></div></div>
+      <div class="msg left"><div class="bubble"><span class="tag">→</span>RCPT TO:&lt;bruno@destino.com&gt;</div></div>
+      <div class="msg right"><div class="bubble">250 OK<span class="tag" style="margin-right:0;margin-left:.5rem;">←</span></div></div>
+      <div class="msg left"><div class="bubble"><span class="tag">→</span>DATA</div></div>
+      <div class="msg right"><div class="bubble">354 Envie o conteúdo, finalize com "."<span class="tag" style="margin-right:0;margin-left:.5rem;">←</span></div></div>
+      <div class="msg left"><div class="bubble"><span class="tag">→</span>Assunto: Olá! ... corpo da mensagem ...</div></div>
+      <div class="msg right"><div class="bubble">250 Mensagem aceita<span class="tag" style="margin-right:0;margin-left:.5rem;">←</span></div></div>
+      <div class="msg left"><div class="bubble"><span class="tag">→</span>QUIT</div></div>
+      <div class="msg right"><div class="bubble">221 Encerrando conexão<span class="tag" style="margin-right:0;margin-left:.5rem;">←</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="comandos">
+  <p class="eyebrow">03 · Vocabulário</p>
+  <h2>Os principais comandos</h2>
+  <p class="lead">O protocolo tem um vocabulário enxuto. Estes são os comandos que aparecem em praticamente
+    toda troca de e-mail:</p>
+  <table>
+    <tr><th>Comando</th><th>Função</th></tr>
+    <tr><td class="cmd">HELO / EHLO</td><td>Abre a conversa e identifica o cliente ao servidor (EHLO é a versão estendida, usada com extensões modernas do SMTP).</td></tr>
+    <tr><td class="cmd">MAIL FROM</td><td>Informa o endereço de quem está enviando a mensagem.</td></tr>
+    <tr><td class="cmd">RCPT TO</td><td>Informa o endereço de quem vai receber. Pode se repetir para vários destinatários.</td></tr>
+    <tr><td class="cmd">DATA</td><td>Sinaliza que o cabeçalho e o corpo da mensagem virão a seguir.</td></tr>
+    <tr><td class="cmd">QUIT</td><td>Encerra a conexão de forma educada.</td></tr>
+  </table>
+  <p style="margin-top:1.2rem; font-size:.9rem; color:#6b6455;">Cada resposta do servidor vem acompanhada
+    de um código de três dígitos — <span class="mono">250</span> significa sucesso, <span class="mono">354</span>
+    pede continuidade, <span class="mono">550</span> indica que o destinatário foi recusado, por exemplo.</p>
+</section>
+
+<section id="portas">
+  <p class="eyebrow">04 · Portas</p>
+  <h2>Por onde o SMTP trafega</h2>
+  <p class="lead">O SMTP usa portas TCP específicas, cada uma associada a um papel diferente no envio.</p>
+  <div class="ports">
+    <div class="port-card">
+      <div class="num">25</div>
+      <span class="tag">servidor-a-servidor</span>
+      <p>Porta original do protocolo, usada na retransmissão entre servidores de e-mail. Muitos provedores
+        bloqueiam o uso direto por clientes para conter spam.</p>
+    </div>
+    <div class="port-card">
+      <div class="num">587</div>
+      <span class="tag">envio autenticado</span>
+      <p>Porta recomendada para clientes de e-mail enviarem mensagens, normalmente com autenticação e
+        criptografia via STARTTLS.</p>
+    </div>
+    <div class="port-card">
+      <div class="num">465</div>
+      <span class="tag">SMTPS</span>
+      <p>Variante que estabelece a criptografia TLS/SSL desde o início da conexão, antes de qualquer
+        comando SMTP.</p>
+    </div>
+  </div>
+</section>
+
+<section id="relacionados">
+  <p class="eyebrow">05 · Contexto</p>
+  <h2>SMTP não trabalha sozinho</h2>
+  <p class="lead">O e-mail depende de três protocolos com papéis distintos e complementares:</p>
+  <div class="compare">
+    <div class="col stamp-top">
+      <h4>SMTP</h4>
+      <p>Envia a mensagem do remetente até o servidor de destino. Só sobe.</p>
+    </div>
+    <div class="col teal-top">
+      <h4>POP3</h4>
+      <p>Baixa as mensagens do servidor para um único dispositivo, geralmente removendo-as de lá.</p>
+    </div>
+    <div class="col">
+      <h4>IMAP</h4>
+      <p>Sincroniza as mensagens entre o servidor e vários dispositivos, mantendo tudo espelhado.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Material de apoio acadêmico sobre o protocolo SMTP — baseado na RFC 5321 (Klensin, 2008) e na RFC 821
+  (Postel, 1982), publicações públicas do IETF.
+</footer>
+
+</body>
+</html>
